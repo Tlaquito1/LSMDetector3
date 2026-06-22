@@ -16,6 +16,7 @@ import androidx.camera.core.Preview as CameraPreviewUseCase
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,11 +30,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +46,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -56,6 +62,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
@@ -190,6 +198,7 @@ private fun LoginScreen(
             label = { Text("Correo electronico") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
+            colors = authTextFieldColors(),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -203,6 +212,7 @@ private fun LoginScreen(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
+            colors = authTextFieldColors(),
             modifier = Modifier.fillMaxWidth()
         )
         if (error.isNotBlank()) {
@@ -230,16 +240,26 @@ private fun LoginScreen(
                 }
             },
             enabled = !isLoading,
-            modifier = Modifier.fillMaxWidth()
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF204F8C),
+                contentColor = Color.White
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
         ) {
-            Text(if (isLoading) "Ingresando..." else "Iniciar sesion")
+            Text(
+                text = if (isLoading) "Ingresando..." else "Entrar al detector",
+                fontWeight = FontWeight.Bold
+            )
         }
         TextButton(
             onClick = onCreateAccount,
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Crear cuenta")
+            Text("Crear cuenta nueva")
         }
     }
 }
@@ -269,6 +289,7 @@ private fun RegisterScreen(
             },
             label = { Text("Nombre") },
             singleLine = true,
+            colors = authTextFieldColors(),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -281,6 +302,7 @@ private fun RegisterScreen(
             label = { Text("Correo electronico") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
+            colors = authTextFieldColors(),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -294,6 +316,7 @@ private fun RegisterScreen(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
+            colors = authTextFieldColors(),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -307,6 +330,7 @@ private fun RegisterScreen(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
+            colors = authTextFieldColors(),
             modifier = Modifier.fillMaxWidth()
         )
         if (error.isNotBlank()) {
@@ -337,9 +361,19 @@ private fun RegisterScreen(
                 }
             },
             enabled = !isLoading,
-            modifier = Modifier.fillMaxWidth()
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF204F8C),
+                contentColor = Color.White
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
         ) {
-            Text(if (isLoading) "Creando cuenta..." else "Registrar")
+            Text(
+                text = if (isLoading) "Creando cuenta..." else "Crear mi cuenta",
+                fontWeight = FontWeight.Bold
+            )
         }
         TextButton(
             onClick = onBackToLogin,
@@ -358,30 +392,56 @@ private fun AuthScaffold(
     subtitle: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val backgroundGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFFECF6FF),
+            Color(0xFFFFF6EF),
+            Color(0xFFF7FBF1)
+        )
+    )
+    val cardGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color.White.copy(alpha = 0.96f),
+            Color(0xFFFFF9F4).copy(alpha = 0.94f)
+        )
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            .background(backgroundGradient)
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
+        AuthBackgroundArt(modifier = Modifier.fillMaxSize())
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.72f)),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .background(cardGradient)
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(92.dp)
+                        .size(104.dp)
                         .background(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            RoundedCornerShape(8.dp)
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFFFFC8A8),
+                                    Color(0xFFBCE7D0),
+                                    Color(0xFFAED7FF)
+                                )
+                            ),
+                            CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -393,9 +453,21 @@ private fun AuthScaffold(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
+                    text = "Aprende - Detecta - Traduce",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF204F8C),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .background(Color(0xFFEAF4FF), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
                     text = title,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
+                    color = Color(0xFF263238),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -403,16 +475,76 @@ private fun AuthScaffold(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color(0xFF51616D),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(18.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AuthInfoChip(text = "Camara IA", modifier = Modifier.weight(1f))
+                    AuthInfoChip(text = "Practica LSM", modifier = Modifier.weight(1f))
+                }
                 Spacer(modifier = Modifier.height(24.dp))
                 content()
             }
         }
     }
 }
+
+@Composable
+private fun AuthBackgroundArt(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        drawCircle(
+            color = Color(0xFF9DD6FF).copy(alpha = 0.38f),
+            radius = size.minDimension * 0.28f,
+            center = Offset(size.width * 0.12f, size.height * 0.18f)
+        )
+        drawCircle(
+            color = Color(0xFFFFC1A6).copy(alpha = 0.42f),
+            radius = size.minDimension * 0.22f,
+            center = Offset(size.width * 0.92f, size.height * 0.2f)
+        )
+        drawCircle(
+            color = Color(0xFFAADDBD).copy(alpha = 0.34f),
+            radius = size.minDimension * 0.26f,
+            center = Offset(size.width * 0.18f, size.height * 0.92f)
+        )
+    }
+}
+
+@Composable
+private fun AuthInfoChip(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(Color(0xFFF4F8FA), RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF3B4A52),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun authTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = Color(0xFF204F8C),
+    focusedLabelColor = Color(0xFF204F8C),
+    cursorColor = Color(0xFF204F8C),
+    unfocusedBorderColor = Color(0xFFB8C6CF),
+    unfocusedLabelColor = Color(0xFF61717A)
+)
 
 /**
  * Pantalla principal de traducción.
