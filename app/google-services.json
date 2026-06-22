@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "932675456776",
+    "project_id": "base-de-datos-b0e5c",
+    "storage_bucket": "base-de-datos-b0e5c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:932675456776:android:e4f12fcd5c4dd6902126bd",
+        "android_client_info": {
+          "package_name": "com.example.lsmdetector"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFVXABLGNmEKcvrR4W9uFCjw0jSQod5yo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
