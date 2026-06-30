@@ -41,6 +41,7 @@ class SignRecognizer(samples: List<SignSample>) {
         .groupBy({ it.first }, { it.second })
 
     fun recognizeStatic(landmarks: String): SignPrediction? {
+        if (!hasTrainingData()) return null
         val current = landmarks.toHandFrame() ?: return null
         // Promedia los vecinos más cercanos de cada clase para reducir ruido.
         val ranked = staticSamples.mapNotNull { (label, samples) ->
@@ -57,6 +58,7 @@ class SignRecognizer(samples: List<SignSample>) {
     }
 
     fun recognizeMotion(frames: List<String>): SignPrediction? {
+        if (!hasTrainingData()) return null
         if (frames.size < MIN_LIVE_MOTION_FRAMES) return null
         val current = frames.mapNotNull { it.toHandFrame() }
         // Una mano casi inmóvil no debe activar K, J, Z, HOLA u otra seña
@@ -77,6 +79,10 @@ class SignRecognizer(samples: List<SignSample>) {
         }.sortedBy { it.second }
 
         return ranked.toPrediction(MOTION_CONFIDENCE_SCALE)
+    }
+
+    fun hasTrainingData(): Boolean {
+        return staticSamples.isNotEmpty() || motionSamples.isNotEmpty()
     }
 
     private fun List<Pair<String, Float>>.toPrediction(scale: Float): SignPrediction? {
