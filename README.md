@@ -49,6 +49,7 @@ Abre la carpeta que contiene `settings.gradle.kts` en Android Studio, sincroniza
 
 - [Historial técnico del desarrollo](docs/HISTORIAL_CAMBIOS.md)
 - [Evidencia de tareas asignadas a Samuel](docs/TAREAS_SAMUEL.md)
+- [Validación de tareas asignadas a JC](docs/VALIDACION_TAREAS_JC.md)
 - [Manual de usuario](docs/Manual_de_usuario_Lengua_de_Senas_Mexicana.docx)
 
 ## Estado del proyecto
