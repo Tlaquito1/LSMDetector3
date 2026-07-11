@@ -237,40 +237,19 @@ class SignRecognizer(samples: List<SignSample>) {
         private const val HAND_LANDMARK_COUNT = 21
         private const val LANDMARK_VALUE_COUNT = 63
         private const val MIN_STORED_MOTION_FRAMES = 15
-        private const val MIN_LIVE_MOTION_FRAMES = 12
-        private const val MOTION_COMPARE_FRAMES = 20
+        private const val MIN_LIVE_MOTION_FRAMES = 9
+        private const val MOTION_COMPARE_FRAMES = 18
         private const val NEIGHBORS_PER_LABEL = 5
         private const val MOTION_NEIGHBORS_PER_LABEL = 3
-        private const val MIN_WRIST_DISPLACEMENT = 0.24f
-        private const val MIN_WRIST_PATH_LENGTH = 0.32f
-        private const val MIN_POSE_CHANGE = 0.19f
+        private const val MIN_WRIST_DISPLACEMENT = 0.16f
+        private const val MIN_WRIST_PATH_LENGTH = 0.22f
+        private const val MIN_POSE_CHANGE = 0.14f
         private const val POSE_WEIGHT = 0.46f
         private const val TRAJECTORY_WEIGHT = 0.34f
         private const val ENDPOINT_WEIGHT = 0.14f
         private const val PATH_WEIGHT = 0.06f
-        private const val STATIC_CONFIDENCE_SCALE = 0.32f
-        private const val MOTION_CONFIDENCE_SCALE = 0.62f
-        private val MOTION_LABELS = setOf(
-            "J",
-            "K",
-            "\u00D1",
-            "Q",
-            "X",
-            "Z",
-            "HOLA",
-            "GRACIAS",
-            "POR FAVOR",
-            "BUENOS DIAS",
-            "BUENAS TARDES",
-            "BUENAS NOCHES",
-            "COMO ESTAS",
-            "ME AYUDAS",
-            "TE QUIERO",
-            "PERDON",
-            "CON PERMISO",
-            "AYUDA",
-            "BAÑO",
-            "EMERGENCIA"
-        )
+        private const val STATIC_CONFIDENCE_SCALE = 0.38f
+        private const val MOTION_CONFIDENCE_SCALE = 0.78f
+        private val MOTION_LABELS = setOf("J", "K", "\u00D1", "Q", "X", "Z", "HOLA")
     }
 }

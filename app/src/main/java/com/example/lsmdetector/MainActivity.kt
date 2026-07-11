@@ -1717,41 +1717,20 @@ private val HandConnections = listOf(
 private const val AUTO_CAPTURE_TARGET = 100
 private const val AUTO_CAPTURE_INTERVAL_MS = 120L
 private const val MOTION_SEQUENCE_FRAMES = 30
-private const val LIVE_MOTION_BUFFER_FRAMES = 22
-private const val RECOGNITION_INTERVAL_MS = 90L
-private const val MIN_RECOGNITION_CONFIDENCE = 48
-private const val STATIC_REQUIRED_VOTES = 3
-private const val STATIC_HOLD_DURATION_MS = 2_500L
-private const val MOTION_MIN_CONFIDENCE = 74
-private const val STATIC_MOTION_GUARD_CONFIDENCE = 58
-private const val MOTION_CONFIDENCE_MARGIN = 16
-private const val MOTION_REQUIRED_VOTES = 4
-private const val MOTION_DISPLAY_VOTES = 3
-private const val MOTION_COMMIT_COOLDOWN_MS = 1_600L
-private const val MOTION_RELEASE_MS = 850L
+private const val LIVE_MOTION_BUFFER_FRAMES = 20
+private const val RECOGNITION_INTERVAL_MS = 85L
+private const val MIN_RECOGNITION_CONFIDENCE = 40
+private const val STATIC_REQUIRED_VOTES = 2
+private const val STATIC_HOLD_DURATION_MS = 2_000L
+private const val MOTION_MIN_CONFIDENCE = 66
+private const val STATIC_MOTION_GUARD_CONFIDENCE = 54
+private const val MOTION_CONFIDENCE_MARGIN = 10
+private const val MOTION_REQUIRED_VOTES = 3
+private const val MOTION_DISPLAY_VOTES = 2
+private const val MOTION_COMMIT_COOLDOWN_MS = 1_250L
+private const val MOTION_RELEASE_MS = 700L
 
-private val MotionLabels = setOf(
-    "J",
-    "K",
-    "\u00D1",
-    "Q",
-    "X",
-    "Z",
-    "HOLA",
-    "GRACIAS",
-    "POR FAVOR",
-    "BUENOS DIAS",
-    "BUENAS TARDES",
-    "BUENAS NOCHES",
-    "COMO ESTAS",
-    "ME AYUDAS",
-    "TE QUIERO",
-    "PERDON",
-    "CON PERMISO",
-    "AYUDA",
-    "BAÑO",
-    "EMERGENCIA"
-)
+private val MotionLabels = setOf("J", "K", "\u00D1", "Q", "X", "Z", "HOLA")
 
 private fun String.appendRecognizedLabel(label: String): String {
     return if (label in PhraseLabels) {
