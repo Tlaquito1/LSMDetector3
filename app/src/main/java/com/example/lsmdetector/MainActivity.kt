@@ -1679,9 +1679,6 @@ private val TrainingLabels = listOf(
 )
 
 private val QuickPhrases = listOf(
-    "HOLA",
-    "GRACIAS",
-    "POR FAVOR",
     "BUENOS DIAS",
     "BUENAS TARDES",
     "BUENAS NOCHES",
@@ -1774,6 +1771,9 @@ private fun String.appendQuickPhrase(phrase: String): String {
 }
 
 private val PhraseLabels = QuickPhrases.toSet() + setOf(
+    "HOLA",
+    "GRACIAS",
+    "POR FAVOR",
     "SI",
     "NO",
     "TE QUIERO",
