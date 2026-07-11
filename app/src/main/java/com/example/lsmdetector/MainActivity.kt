@@ -733,8 +733,12 @@ private fun DetectorScreen(
                             ?: previewStaticPrediction
 
                         val recognizedLabel = prediction?.label
-                        val writableStaticLabel = stableStaticPrediction
-                            ?.takeIf { it.confidence >= STATIC_WRITE_CONFIDENCE }
+                        val writableStaticLabel = previewStaticPrediction
+                            ?.takeIf {
+                                !motionLocked &&
+                                    motionPrediction == null &&
+                                    it.confidence >= STATIC_WRITE_CONFIDENCE
+                            }
                             ?.label
                             ?.takeIf { it !in MotionLabels }
 
@@ -765,7 +769,7 @@ private fun DetectorScreen(
                             if (recognizedLabel in MotionLabels) {
                                 "Movimiento posible. Completa la trayectoria con calma."
                             } else if (writableStaticLabel == null) {
-                                "Seña posible. Manténla quieta y centrada para confirmar."
+                                "Seña posible. Necesita 60% para iniciar el contador."
                             } else {
                                 "Seña clara. Manténla estable para escribirla."
                             }
@@ -1718,7 +1722,7 @@ private const val MOTION_SEQUENCE_FRAMES = 30
 private const val LIVE_MOTION_BUFFER_FRAMES = 22
 private const val RECOGNITION_INTERVAL_MS = 100L
 private const val MIN_RECOGNITION_CONFIDENCE = 25
-private const val STATIC_WRITE_CONFIDENCE = 56
+private const val STATIC_WRITE_CONFIDENCE = 60
 private const val STATIC_REQUIRED_VOTES = 3
 private const val STATIC_HOLD_DURATION_MS = 2_800L
 private const val MOTION_MIN_CONFIDENCE = 58
