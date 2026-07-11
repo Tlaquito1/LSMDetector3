@@ -1,5 +1,6 @@
 package com.example.lsmdetector
 
+import kotlin.math.abs
 import kotlin.math.sqrt
 
 data class SignPrediction(
@@ -119,17 +120,27 @@ class SignRecognizer(samples: List<SignSample>) {
         // La forma de la mano y la trayectoria de la muñeca aportan al resultado.
         val poseDistance = poseTotal / sampleCount
         val trajectoryDistance = trajectoryTotal / sampleCount
-        return poseDistance * POSE_WEIGHT + trajectoryDistance * TRAJECTORY_WEIGHT
+        val endDistance = endpointDistance(first, second)
+        val pathDistance = abs(normalizedPathLength(first) - normalizedPathLength(second))
+        return poseDistance * POSE_WEIGHT +
+            trajectoryDistance * TRAJECTORY_WEIGHT +
+            endDistance * ENDPOINT_WEIGHT +
+            pathDistance * PATH_WEIGHT
     }
 
     private fun hasIntentionalMotion(frames: List<HandFrame>): Boolean {
         val start = frames.first()
         var maximumWristDisplacement = 0f
         var maximumPoseChange = 0f
+        var wristPathLength = 0f
+        var previous = start
 
         frames.drop(1).forEach { frame ->
             val dx = (frame.wristX - start.wristX) / start.scale
             val dy = (frame.wristY - start.wristY) / start.scale
+            val pathDx = (frame.wristX - previous.wristX) / start.scale
+            val pathDy = (frame.wristY - previous.wristY) / start.scale
+            wristPathLength += sqrt(pathDx * pathDx + pathDy * pathDy)
             maximumWristDisplacement = maxOf(
                 maximumWristDisplacement,
                 sqrt(dx * dx + dy * dy)
@@ -138,10 +149,38 @@ class SignRecognizer(samples: List<SignSample>) {
                 maximumPoseChange,
                 frameDistance(start.pose, frame.pose)
             )
+            previous = frame
         }
 
-        return maximumWristDisplacement >= MIN_WRIST_DISPLACEMENT ||
+        return (maximumWristDisplacement >= MIN_WRIST_DISPLACEMENT &&
+            wristPathLength >= MIN_WRIST_PATH_LENGTH) ||
             maximumPoseChange >= MIN_POSE_CHANGE
+    }
+
+    private fun endpointDistance(first: List<HandFrame>, second: List<HandFrame>): Float {
+        val firstStart = first.first()
+        val secondStart = second.first()
+        val firstEnd = first.last()
+        val secondEnd = second.last()
+        val firstDx = (firstEnd.wristX - firstStart.wristX) / firstStart.scale
+        val firstDy = (firstEnd.wristY - firstStart.wristY) / firstStart.scale
+        val secondDx = (secondEnd.wristX - secondStart.wristX) / secondStart.scale
+        val secondDy = (secondEnd.wristY - secondStart.wristY) / secondStart.scale
+        val dx = firstDx - secondDx
+        val dy = firstDy - secondDy
+        return sqrt(dx * dx + dy * dy)
+    }
+
+    private fun normalizedPathLength(frames: List<HandFrame>): Float {
+        if (frames.size < 2) return 0f
+        val start = frames.first()
+        var total = 0f
+        frames.zipWithNext { previous, current ->
+            val dx = (current.wristX - previous.wristX) / start.scale
+            val dy = (current.wristY - previous.wristY) / start.scale
+            total += sqrt(dx * dx + dy * dy)
+        }
+        return total
     }
 
     private fun frameDistance(first: FloatArray, second: FloatArray): Float {
@@ -192,16 +231,40 @@ class SignRecognizer(samples: List<SignSample>) {
         private const val HAND_LANDMARK_COUNT = 21
         private const val LANDMARK_VALUE_COUNT = 63
         private const val MIN_STORED_MOTION_FRAMES = 15
-        private const val MIN_LIVE_MOTION_FRAMES = 10
-        private const val MOTION_COMPARE_FRAMES = 18
+        private const val MIN_LIVE_MOTION_FRAMES = 12
+        private const val MOTION_COMPARE_FRAMES = 20
         private const val NEIGHBORS_PER_LABEL = 5
-        private const val MOTION_NEIGHBORS_PER_LABEL = 2
-        private const val MIN_WRIST_DISPLACEMENT = 0.20f
-        private const val MIN_POSE_CHANGE = 0.16f
-        private const val POSE_WEIGHT = 0.55f
-        private const val TRAJECTORY_WEIGHT = 0.45f
+        private const val MOTION_NEIGHBORS_PER_LABEL = 3
+        private const val MIN_WRIST_DISPLACEMENT = 0.24f
+        private const val MIN_WRIST_PATH_LENGTH = 0.32f
+        private const val MIN_POSE_CHANGE = 0.19f
+        private const val POSE_WEIGHT = 0.46f
+        private const val TRAJECTORY_WEIGHT = 0.34f
+        private const val ENDPOINT_WEIGHT = 0.14f
+        private const val PATH_WEIGHT = 0.06f
         private const val STATIC_CONFIDENCE_SCALE = 0.32f
-        private const val MOTION_CONFIDENCE_SCALE = 0.65f
-        private val MOTION_LABELS = setOf("J", "K", "\u00D1", "Q", "X", "Z", "HOLA")
+        private const val MOTION_CONFIDENCE_SCALE = 0.62f
+        private val MOTION_LABELS = setOf(
+            "J",
+            "K",
+            "\u00D1",
+            "Q",
+            "X",
+            "Z",
+            "HOLA",
+            "GRACIAS",
+            "POR FAVOR",
+            "BUENOS DIAS",
+            "BUENAS TARDES",
+            "BUENAS NOCHES",
+            "COMO ESTAS",
+            "ME AYUDAS",
+            "TE QUIERO",
+            "PERDON",
+            "CON PERMISO",
+            "AYUDA",
+            "BAÑO",
+            "EMERGENCIA"
+        )
     }
 }
