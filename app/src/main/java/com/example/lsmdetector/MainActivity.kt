@@ -785,9 +785,6 @@ private fun DetectorScreen(
             )
             PhraseComposer(
                 phrase = phrase,
-                onAppendPhrase = { quickPhrase ->
-                    phrase = phrase.appendQuickPhrase(quickPhrase)
-                },
                 onAddSpace = {
                     if (phrase.isNotEmpty() && !phrase.endsWith(" ")) {
                         phrase += " "
@@ -837,7 +834,6 @@ private fun DetectionPill(hasHand: Boolean) {
 @Composable
 private fun PhraseComposer(
     phrase: String,
-    onAppendPhrase: (String) -> Unit,
     onAddSpace: () -> Unit,
     onDelete: () -> Unit,
     onClear: () -> Unit
@@ -872,16 +868,6 @@ private fun PhraseComposer(
                 },
                 modifier = Modifier.fillMaxWidth()
             )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(QuickPhrases) { quickPhrase ->
-                    OutlinedButton(onClick = { onAppendPhrase(quickPhrase) }) {
-                        Text(quickPhrase)
-                    }
-                }
-            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1589,24 +1575,24 @@ private fun DetectionStatus(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Seña detectada",
+                        text = if (prediction != null) "Lista para escribir" else "Esperando seña",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = prediction?.label ?: "—",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
+                        text = message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
                         color = if (prediction != null) {
-                            MaterialTheme.colorScheme.primary
+                            MaterialTheme.colorScheme.onSurface
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         }
                     )
                 }
                 Text(
-                    text = prediction?.let { "${it.confidence}%" } ?: "",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = prediction?.let { "${it.label} ${it.confidence}%" } ?: "",
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -1618,11 +1604,6 @@ private fun DetectionStatus(
                     .height(6.dp),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -1678,18 +1659,6 @@ private val TrainingLabels = listOf(
     "EMERGENCIA"
 )
 
-private val QuickPhrases = listOf(
-    "BUENOS DIAS",
-    "BUENAS TARDES",
-    "BUENAS NOCHES",
-    "COMO ESTAS",
-    "ME AYUDAS",
-    "AYUDA",
-    "AGUA",
-    "BAÑO",
-    "EMERGENCIA"
-)
-
 private val HandConnections = listOf(
     0 to 1,
     1 to 2,
@@ -1718,19 +1687,40 @@ private const val AUTO_CAPTURE_TARGET = 100
 private const val AUTO_CAPTURE_INTERVAL_MS = 120L
 private const val MOTION_SEQUENCE_FRAMES = 30
 private const val LIVE_MOTION_BUFFER_FRAMES = 20
-private const val RECOGNITION_INTERVAL_MS = 85L
-private const val MIN_RECOGNITION_CONFIDENCE = 40
-private const val STATIC_REQUIRED_VOTES = 2
-private const val STATIC_HOLD_DURATION_MS = 2_000L
-private const val MOTION_MIN_CONFIDENCE = 66
-private const val STATIC_MOTION_GUARD_CONFIDENCE = 54
-private const val MOTION_CONFIDENCE_MARGIN = 10
-private const val MOTION_REQUIRED_VOTES = 3
-private const val MOTION_DISPLAY_VOTES = 2
-private const val MOTION_COMMIT_COOLDOWN_MS = 1_250L
-private const val MOTION_RELEASE_MS = 700L
+private const val RECOGNITION_INTERVAL_MS = 80L
+private const val MIN_RECOGNITION_CONFIDENCE = 30
+private const val STATIC_REQUIRED_VOTES = 1
+private const val STATIC_HOLD_DURATION_MS = 1_200L
+private const val MOTION_MIN_CONFIDENCE = 50
+private const val STATIC_MOTION_GUARD_CONFIDENCE = 48
+private const val MOTION_CONFIDENCE_MARGIN = 4
+private const val MOTION_REQUIRED_VOTES = 2
+private const val MOTION_DISPLAY_VOTES = 1
+private const val MOTION_COMMIT_COOLDOWN_MS = 1_100L
+private const val MOTION_RELEASE_MS = 600L
 
-private val MotionLabels = setOf("J", "K", "\u00D1", "Q", "X", "Z", "HOLA")
+private val MotionLabels = setOf(
+    "J",
+    "K",
+    "\u00D1",
+    "Q",
+    "X",
+    "Z",
+    "HOLA",
+    "GRACIAS",
+    "POR FAVOR",
+    "BUENOS DIAS",
+    "BUENAS TARDES",
+    "BUENAS NOCHES",
+    "COMO ESTAS",
+    "ME AYUDAS",
+    "TE QUIERO",
+    "PERDON",
+    "CON PERMISO",
+    "AYUDA",
+    "BAÑO",
+    "EMERGENCIA"
+)
 
 private fun String.appendRecognizedLabel(label: String): String {
     return if (label in PhraseLabels) {
@@ -1749,7 +1739,7 @@ private fun String.appendQuickPhrase(phrase: String): String {
     }
 }
 
-private val PhraseLabels = QuickPhrases.toSet() + setOf(
+private val PhraseLabels = setOf(
     "HOLA",
     "GRACIAS",
     "POR FAVOR",
@@ -1760,7 +1750,16 @@ private val PhraseLabels = QuickPhrases.toSet() + setOf(
     "CON PERMISO",
     "COMIDA",
     "ESCUELA",
-    "DOCTOR"
+    "DOCTOR",
+    "BUENOS DIAS",
+    "BUENAS TARDES",
+    "BUENAS NOCHES",
+    "COMO ESTAS",
+    "ME AYUDAS",
+    "AYUDA",
+    "AGUA",
+    "BAÑO",
+    "EMERGENCIA"
 )
 
 private fun String.toNormalizedHandPoints(): List<Pair<Float, Float>> {
