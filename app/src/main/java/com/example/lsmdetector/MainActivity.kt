@@ -794,6 +794,7 @@ private fun DetectorScreen(
             DetectionStatus(
                 message = detectorMessage,
                 prediction = prediction,
+                candidateLabel = candidateLabel,
                 confirmationProgress = confirmationProgress
             )
             PhraseComposer(
@@ -1566,8 +1567,13 @@ private fun Float.overlayX(width: Float, mirrorHorizontally: Boolean): Float {
 private fun DetectionStatus(
     message: String = "Modelo pendiente de entrenamiento",
     prediction: SignPrediction? = null,
+    candidateLabel: String = "",
     confirmationProgress: Float = 0f
 ) {
+    val isConfirming = candidateLabel.isNotBlank()
+    val secondsRemaining = (((1f - confirmationProgress) * STATIC_HOLD_DURATION_MS) / 1000f)
+        .coerceAtLeast(0f)
+
     Card(
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
@@ -1588,8 +1594,10 @@ private fun DetectionStatus(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (prediction != null) {
-                            if (confirmationProgress > 0f) "Confirmando" else "Seña posible"
+                        text = if (isConfirming) {
+                            "Confirmando $candidateLabel"
+                        } else if (prediction != null) {
+                            "Seña posible"
                         } else {
                             "Esperando seña"
                         },
@@ -1608,7 +1616,11 @@ private fun DetectionStatus(
                     )
                 }
                 Text(
-                    text = prediction?.let { "${it.label} ${it.confidence}%" } ?: "",
+                    text = if (isConfirming) {
+                        "${String.format("%.1f", secondsRemaining)} s para escribir"
+                    } else {
+                        prediction?.let { "${it.label} ${it.confidence}%" } ?: ""
+                    },
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.secondary
@@ -1708,7 +1720,7 @@ private const val RECOGNITION_INTERVAL_MS = 100L
 private const val MIN_RECOGNITION_CONFIDENCE = 25
 private const val STATIC_WRITE_CONFIDENCE = 56
 private const val STATIC_REQUIRED_VOTES = 3
-private const val STATIC_HOLD_DURATION_MS = 2_400L
+private const val STATIC_HOLD_DURATION_MS = 2_800L
 private const val MOTION_MIN_CONFIDENCE = 58
 private const val STATIC_MOTION_GUARD_CONFIDENCE = 54
 private const val MOTION_CONFIDENCE_MARGIN = 8
