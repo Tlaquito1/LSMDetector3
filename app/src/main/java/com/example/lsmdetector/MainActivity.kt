@@ -19,6 +19,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,8 +31,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -62,6 +65,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -187,7 +191,7 @@ private fun LoginScreen(
 
     AuthScaffold(
         title = "Lengua de Señas Mexicana",
-        subtitle = "Inicia sesión para comenzar a reconocer y traducir señas"
+        subtitle = "Reconoce, practica y traduce señas desde la cámara de tu celular"
     ) {
         OutlinedTextField(
             value = email,
@@ -195,7 +199,7 @@ private fun LoginScreen(
                 email = it
                 error = ""
             },
-            label = { Text("Correo electronico") },
+            label = { Text("Correo electrónico") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
             colors = authTextFieldColors(),
@@ -208,7 +212,7 @@ private fun LoginScreen(
                 password = it
                 error = ""
             },
-            label = { Text("Contrasena") },
+            label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
@@ -227,7 +231,7 @@ private fun LoginScreen(
         Button(
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
-                    error = "Completa correo y contrasena."
+                    error = "Completa correo y contraseña."
                 } else {
                     isLoading = true
                     error = ""
@@ -279,7 +283,7 @@ private fun RegisterScreen(
 
     AuthScaffold(
         title = "Crear cuenta",
-        subtitle = "Guarda tu perfil para continuar con el detector"
+        subtitle = "Guarda tu perfil y continúa tu práctica en otros dispositivos"
     ) {
         OutlinedTextField(
             value = name,
@@ -299,7 +303,7 @@ private fun RegisterScreen(
                 email = it
                 error = ""
             },
-            label = { Text("Correo electronico") },
+            label = { Text("Correo electrónico") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
             colors = authTextFieldColors(),
@@ -312,7 +316,7 @@ private fun RegisterScreen(
                 password = it
                 error = ""
             },
-            label = { Text("Contrasena") },
+            label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
@@ -326,7 +330,7 @@ private fun RegisterScreen(
                 confirmPassword = it
                 error = ""
             },
-            label = { Text("Confirmar contrasena") },
+            label = { Text("Confirmar contraseña") },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
@@ -346,8 +350,8 @@ private fun RegisterScreen(
             onClick = {
                 error = when {
                     name.isBlank() || email.isBlank() || password.isBlank() -> "Completa todos los campos."
-                    password.length < 6 -> "La contrasena debe tener al menos 6 caracteres."
-                    password != confirmPassword -> "Las contrasenas no coinciden."
+                    password.length < 6 -> "La contraseña debe tener al menos 6 caracteres."
+                    password != confirmPassword -> "Las contraseñas no coinciden."
                     else -> ""
                 }
                 if (error.isBlank()) {
@@ -485,8 +489,8 @@ private fun AuthScaffold(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AuthInfoChip(text = "Camara IA", modifier = Modifier.weight(1f))
-                    AuthInfoChip(text = "Practica LSM", modifier = Modifier.weight(1f))
+                    AuthInfoChip(text = "Cámara IA", modifier = Modifier.weight(1f))
+                    AuthInfoChip(text = "Práctica LSM", modifier = Modifier.weight(1f))
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 content()
@@ -562,7 +566,7 @@ private fun DetectorScreen(
 ) {
     val recognizer = remember { SignRecognizer(userDatabase.getAllSignSamples()) }
     var latestLandmarks by remember { mutableStateOf("") }
-    var detectorMessage by remember { mutableStateOf("Coloca tu mano frente a la camara.") }
+    var detectorMessage by remember { mutableStateOf("Coloca tu mano frente a la cámara.") }
     var prediction by remember { mutableStateOf<SignPrediction?>(null) }
     var motionBuffer by remember { mutableStateOf(emptyList<String>()) }
     var lastRecognitionTime by remember { mutableStateOf(0L) }
@@ -570,6 +574,7 @@ private fun DetectorScreen(
     var candidateSince by remember { mutableStateOf(0L) }
     var lastMotionCommitTime by remember { mutableStateOf(0L) }
     var motionVotes by remember { mutableStateOf(emptyList<String>()) }
+    var staticVotes by remember { mutableStateOf(emptyList<String>()) }
     var motionLocked by remember { mutableStateOf(false) }
     var motionQuietSince by remember { mutableStateOf(0L) }
     var phrase by remember { mutableStateOf("") }
@@ -594,14 +599,14 @@ private fun DetectorScreen(
                 },
                 actions = {
                     TextButton(onClick = onOpenTraining) {
-                        Text("Entrenar")
+                        Text("Práctica")
                     }
                     TextButton(onClick = onLogout) {
                         Text("Salir")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f),
                     titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
@@ -611,41 +616,40 @@ private fun DetectorScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.18f))
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                shape = RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Column {
-                    Text(
-                        text = "Hola, $userName",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Haz una sena dentro del encuadre",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Box(
+                Row(
                     modifier = Modifier
-                        .size(12.dp)
-                        .background(
-                            if (latestLandmarks.isBlank()) {
-                                MaterialTheme.colorScheme.outline
-                            } else {
-                                Color(0xFF18A66A)
-                            },
-                            RoundedCornerShape(6.dp)
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Hola, $userName",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
                         )
-                )
+                        Text(
+                            text = "La cámara es el área principal de traducción",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DetectionPill(hasHand = latestLandmarks.isNotBlank())
+                }
             }
             CameraPanel(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(2.45f),
                 landmarks = latestLandmarks,
                 onLandmarksDetected = { landmarks ->
                     latestLandmarks = landmarks
@@ -701,14 +705,26 @@ private fun DetectorScreen(
                             motionVotes = emptyList()
                         }
 
+                        val stableStaticPrediction = staticPrediction
+                            ?.takeIf { it.confidence >= MIN_RECOGNITION_CONFIDENCE }
+                            ?.let { static ->
+                                staticVotes = (staticVotes + static.label)
+                                    .takeLast(STATIC_REQUIRED_VOTES)
+                                val stableStatic = staticVotes.size == STATIC_REQUIRED_VOTES &&
+                                    staticVotes.all { it == static.label }
+                                static.takeIf { stableStatic }
+                            } ?: run {
+                                staticVotes = emptyList()
+                                null
+                            }
+
                         // Solo se muestra un movimiento cuando ya acumula votos.
                         val stableMotionPrediction = motionPrediction?.takeIf {
-                            !motionLocked && motionVotes.count { vote -> vote == it.label } >= 2
+                            !motionLocked && motionVotes.count { vote -> vote == it.label } >=
+                                MOTION_DISPLAY_VOTES
                         }
                         prediction = stableMotionPrediction
-                            ?: staticPrediction?.takeIf {
-                                it.confidence >= MIN_RECOGNITION_CONFIDENCE
-                            }
+                            ?: stableStaticPrediction
 
                         val recognizedLabel = prediction?.label
                         if (recognizedLabel == null || recognizedLabel in MotionLabels) {
@@ -736,12 +752,12 @@ private fun DetectorScreen(
                             if (recognizedLabel in MotionLabels) {
                                 "Movimiento consistente detectado."
                             } else {
-                                "Manten la letra durante 3 segundos para escribirla."
+                                "Mantén la seña estable para escribirla."
                             }
                         } else if (motionLocked) {
-                            "Movimiento escrito. Deten la mano un momento para continuar."
+                            "Movimiento escrito. Detén la mano un momento para continuar."
                         } else {
-                            "Mano detectada, pero aun no hay coincidencia confiable."
+                            "Mano detectada, esperando una coincidencia confiable."
                         }
                     }
                 },
@@ -750,19 +766,28 @@ private fun DetectorScreen(
                     prediction = null
                     motionBuffer = emptyList()
                     motionVotes = emptyList()
+                    staticVotes = emptyList()
                     motionLocked = false
                     motionQuietSince = 0L
                     candidateLabel = ""
                     candidateSince = 0L
                     confirmationProgress = 0f
-                    detectorMessage = "Coloca tu mano frente a la camara."
+                    detectorMessage = "Coloca tu mano frente a la cámara."
                 },
                 onLandmarkerError = { message ->
                     detectorMessage = message
                 }
             )
+            DetectionStatus(
+                message = detectorMessage,
+                prediction = prediction,
+                confirmationProgress = confirmationProgress
+            )
             PhraseComposer(
                 phrase = phrase,
+                onAppendPhrase = { quickPhrase ->
+                    phrase = phrase.appendQuickPhrase(quickPhrase)
+                },
                 onAddSpace = {
                     if (phrase.isNotEmpty() && !phrase.endsWith(" ")) {
                         phrase += " "
@@ -775,12 +800,36 @@ private fun DetectorScreen(
                     phrase = ""
                 }
             )
-            DetectionStatus(
-                message = detectorMessage,
-                prediction = prediction,
-                confirmationProgress = confirmationProgress
-            )
         }
+    }
+}
+
+@Composable
+private fun DetectionPill(hasHand: Boolean) {
+    Row(
+        modifier = Modifier
+            .background(
+                if (hasHand) Color(0xFFE0F4E8) else MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .background(
+                    if (hasHand) Color(0xFF18A66A) else MaterialTheme.colorScheme.outline,
+                    RoundedCornerShape(5.dp)
+                )
+        )
+        Text(
+            text = if (hasHand) "Mano" else "Sin mano",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -788,6 +837,7 @@ private fun DetectorScreen(
 @Composable
 private fun PhraseComposer(
     phrase: String,
+    onAppendPhrase: (String) -> Unit,
     onAddSpace: () -> Unit,
     onDelete: () -> Unit,
     onClear: () -> Unit
@@ -812,7 +862,7 @@ private fun PhraseComposer(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = if (phrase.isBlank()) "La frase aparecera aqui" else phrase,
+                text = if (phrase.isBlank()) "La frase aparecerá aquí" else phrase,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = if (phrase.isBlank()) FontWeight.Normal else FontWeight.SemiBold,
                 color = if (phrase.isBlank()) {
@@ -822,6 +872,16 @@ private fun PhraseComposer(
                 },
                 modifier = Modifier.fillMaxWidth()
             )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(QuickPhrases) { quickPhrase ->
+                    OutlinedButton(onClick = { onAppendPhrase(quickPhrase) }) {
+                        Text(quickPhrase)
+                    }
+                }
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -864,7 +924,7 @@ private fun TrainingScreen(
     val context = LocalContext.current
     var selectedLabel by remember { mutableStateOf(TrainingLabels.first()) }
     var sampleCounts by remember { mutableStateOf(userDatabase.getSignSampleCounts()) }
-    var statusMessage by remember { mutableStateOf("Selecciona una sena y guarda ejemplos.") }
+    var statusMessage by remember { mutableStateOf("Selecciona una seña y guarda ejemplos.") }
     var latestLandmarks by remember { mutableStateOf("") }
     var isAutoCapturing by remember { mutableStateOf(false) }
     var autoCaptureProgress by remember { mutableStateOf(0) }
@@ -884,7 +944,7 @@ private fun TrainingScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "Lengua de Señas Mexicana",
+                            "Cámara amplia para capturar mejor tus muestras",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -906,11 +966,49 @@ private fun TrainingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.16f))
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = selectedLabel,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = if (isMotionLabel) {
+                                "Movimiento: ocupa todo el encuadre"
+                            } else {
+                                "Seña estática: mano centrada y clara"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        text = "${countsByLabel[selectedLabel] ?: 0} muestras",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
             CameraPanel(
-                modifier = Modifier.weight(0.8f),
+                modifier = Modifier.weight(3.6f),
                 landmarks = latestLandmarks,
                 onLandmarksDetected = { landmarks ->
                     latestLandmarks = landmarks
@@ -935,7 +1033,7 @@ private fun TrainingScreen(
                                     sampleCounts = userDatabase.getSignSampleCounts()
                                     statusMessage = if (saved) {
                                         "Movimiento guardado para $selectedLabel. " +
-                                            "Repite la grabacion desde la posicion inicial."
+                                            "Repite la grabación desde la posición inicial."
                                     } else {
                                         "No se pudo guardar el movimiento."
                                     }
@@ -969,139 +1067,188 @@ private fun TrainingScreen(
                     if (isAutoCapturing) {
                         isAutoCapturing = false
                         motionFrames = emptyList()
-                        statusMessage = "Se perdio la mano. Vuelve a colocarla y reinicia la captura."
+                        statusMessage = "Se perdió la mano. Vuelve a colocarla y reinicia la captura."
                     } else {
-                        statusMessage = "Coloca tu mano frente a la camara."
+                        statusMessage = "Coloca tu mano frente a la cámara."
                     }
                 }
             )
             Card(
                 shape = RoundedCornerShape(8.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(
-                        text = "Sena seleccionada: $selectedLabel",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = if (isMotionLabel) {
-                            "Movimientos guardados: ${countsByLabel[selectedLabel] ?: 0}"
-                        } else {
-                            "Muestras guardadas: ${countsByLabel[selectedLabel] ?: 0}"
-                        },
-                        style = MaterialTheme.typography.bodyMedium
-                    )
                     Text(
                         text = statusMessage,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (isAutoCapturing) {
+                        val target = if (isMotionLabel) {
+                            MOTION_SEQUENCE_FRAMES
+                        } else {
+                            AUTO_CAPTURE_TARGET
+                        }
+                        LinearProgressIndicator(
+                            progress = {
+                                (autoCaptureProgress.toFloat() / target).coerceIn(0f, 1f)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    }
                     if (!isMotionLabel) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    if (latestLandmarks.isBlank()) {
+                                        statusMessage =
+                                            "Pon tu mano frente a la cámara antes de guardar."
+                                    } else {
+                                        val saved = userDatabase.saveSignSample(
+                                            selectedLabel,
+                                            latestLandmarks
+                                        )
+                                        if (saved) {
+                                            sampleCounts = userDatabase.getSignSampleCounts()
+                                            statusMessage = "Puntos guardados para $selectedLabel."
+                                        } else {
+                                            statusMessage = "No se pudo guardar el ejemplo."
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Guardar")
+                            }
+                            Button(
+                                onClick = {
+                                    if (isAutoCapturing) {
+                                        isAutoCapturing = false
+                                        motionFrames = emptyList()
+                                        sampleCounts = userDatabase.getSignSampleCounts()
+                                        statusMessage =
+                                            "Captura detenida en $autoCaptureProgress muestras."
+                                    } else if (latestLandmarks.isBlank()) {
+                                        statusMessage =
+                                            "Primero coloca la mano frente a la cámara."
+                                    } else {
+                                        autoCaptureProgress = 0
+                                        motionFrames = emptyList()
+                                        lastAutoCaptureTime = 0L
+                                        isAutoCapturing = true
+                                        statusMessage =
+                                            "Mantén la seña $selectedLabel y mueve ligeramente la mano."
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    if (isAutoCapturing) {
+                                        "Detener ($autoCaptureProgress/$AUTO_CAPTURE_TARGET)"
+                                    } else {
+                                        "Auto $AUTO_CAPTURE_TARGET"
+                                    }
+                                )
+                            }
+                        }
+                    } else {
                         Button(
                             onClick = {
-                                if (latestLandmarks.isBlank()) {
-                                    statusMessage = "Pon tu mano frente a la camara antes de guardar."
+                                if (isAutoCapturing) {
+                                    isAutoCapturing = false
+                                    motionFrames = emptyList()
+                                    sampleCounts = userDatabase.getSignSampleCounts()
+                                    statusMessage = "Grabación de movimiento cancelada."
+                                } else if (latestLandmarks.isBlank()) {
+                                    statusMessage =
+                                        "Primero coloca la mano frente a la cámara."
                                 } else {
-                                    val saved =
-                                        userDatabase.saveSignSample(selectedLabel, latestLandmarks)
-                                    if (saved) {
-                                        sampleCounts = userDatabase.getSignSampleCounts()
-                                        statusMessage = "Puntos guardados para $selectedLabel."
-                                    } else {
-                                        statusMessage = "No se pudo guardar el ejemplo."
-                                    }
+                                    autoCaptureProgress = 0
+                                    motionFrames = emptyList()
+                                    lastAutoCaptureTime = 0L
+                                    isAutoCapturing = true
+                                    statusMessage =
+                                        "Realiza ahora el movimiento completo de $selectedLabel."
                                 }
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Guardar ejemplo")
-                        }
-                    }
-                    Button(
-                        onClick = {
-                            if (isAutoCapturing) {
-                                isAutoCapturing = false
-                                motionFrames = emptyList()
-                                sampleCounts = userDatabase.getSignSampleCounts()
-                                statusMessage = if (isMotionLabel) {
-                                    "Grabacion de movimiento cancelada."
-                                } else {
-                                    "Captura detenida en $autoCaptureProgress muestras."
-                                }
-                            } else if (latestLandmarks.isBlank()) {
-                                statusMessage =
-                                    "Primero coloca la mano frente a la camara."
-                            } else {
-                                autoCaptureProgress = 0
-                                motionFrames = emptyList()
-                                lastAutoCaptureTime = 0L
-                                isAutoCapturing = true
-                                statusMessage = if (isMotionLabel) {
-                                    "Realiza ahora el movimiento completo de $selectedLabel."
-                                } else {
-                                    "Manten la sena $selectedLabel y mueve ligeramente la mano."
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            if (isAutoCapturing) {
-                                if (isMotionLabel) {
+                            Text(
+                                if (isAutoCapturing) {
                                     "Detener movimiento ($autoCaptureProgress/$MOTION_SEQUENCE_FRAMES)"
                                 } else {
-                                    "Detener captura ($autoCaptureProgress/$AUTO_CAPTURE_TARGET)"
+                                    "Grabar movimiento"
                                 }
-                            } else if (isMotionLabel) {
-                                "Grabar movimiento"
-                            } else {
-                                "Capturar $AUTO_CAPTURE_TARGET automaticamente"
-                            }
-                        )
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            val exportFile = exportTrainingSamplesToCsv(
-                                context = context,
-                                samples = userDatabase.getAllSignSamples()
                             )
-                            statusMessage = if (exportFile != null) {
-                                "CSV guardado en: ${exportFile.absolutePath}"
-                            } else {
-                                "No hay muestras para exportar."
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Exportar CSV")
+                        OutlinedButton(
+                            onClick = {
+                                val exportFile = exportTrainingSamplesToCsv(
+                                    context = context,
+                                    samples = userDatabase.getAllSignSamples()
+                                )
+                                statusMessage = if (exportFile != null) {
+                                    "CSV guardado en: ${exportFile.absolutePath}"
+                                } else {
+                                    "No hay muestras para exportar."
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Exportar CSV")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                isAutoCapturing = false
+                                autoCaptureProgress = 0
+                                motionFrames = emptyList()
+                                statusMessage = "Captura lista para reiniciar."
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Reiniciar")
+                        }
                     }
                 }
             }
             Text(
-                text = "Abecedario y palabras",
+                text = "Abecedario y frases",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(76.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(TrainingLabels) { label ->
                     val count = countsByLabel[label] ?: 0
-                    SignLabelRow(
+                    SignLabelChip(
                         label = label,
                         sampleCount = count,
                         isSelected = selectedLabel == label,
+                        isMotion = label in MotionLabels,
                         onSelect = {
                             isAutoCapturing = false
                             autoCaptureProgress = 0
@@ -1121,10 +1268,11 @@ private fun TrainingScreen(
 }
 
 @Composable
-private fun SignLabelRow(
+private fun SignLabelChip(
     label: String,
     sampleCount: Int,
     isSelected: Boolean,
+    isMotion: Boolean,
     onSelect: () -> Unit
 ) {
     val containerColor = if (isSelected) {
@@ -1138,21 +1286,22 @@ private fun SignLabelRow(
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .width(if (label.length > 3) 132.dp else 78.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
             )
             Text(
-                text = "$sampleCount muestras",
-                style = MaterialTheme.typography.bodyMedium,
+                text = if (isMotion) "mov. $sampleCount" else "$sampleCount",
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -1191,7 +1340,13 @@ private fun CameraPanel(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color.Black, RoundedCornerShape(8.dp)),
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Black)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+                shape = RoundedCornerShape(8.dp)
+            ),
         contentAlignment = Alignment.Center
     ) {
         if (hasCameraPermission) {
@@ -1207,6 +1362,7 @@ private fun CameraPanel(
                 mirrorHorizontally = lensFacing == CameraSelector.LENS_FACING_FRONT,
                 modifier = Modifier.fillMaxSize()
             )
+            CameraGuideOverlay(modifier = Modifier.fillMaxSize())
             OutlinedButton(
                 onClick = {
                     lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
@@ -1221,9 +1377,9 @@ private fun CameraPanel(
             ) {
                 Text(
                     if (lensFacing == CameraSelector.LENS_FACING_BACK) {
-                        "Camara frontal"
+                        "Cámara frontal"
                     } else {
-                        "Camara trasera"
+                        "Cámara trasera"
                     }
                 )
             }
@@ -1234,15 +1390,33 @@ private fun CameraPanel(
                 modifier = Modifier.padding(24.dp)
             ) {
                 Text(
-                    text = "Permite el acceso a la camara para iniciar la deteccion.",
+                    text = "Permite el acceso a la cámara para iniciar la detección.",
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
                 OutlinedButton(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
-                    Text("Permitir camara")
+                    Text("Permitir cámara")
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CameraGuideOverlay(modifier: Modifier = Modifier) {
+    val guideColor = MaterialTheme.colorScheme.primaryContainer
+    Canvas(modifier = modifier) {
+        val horizontalPadding = size.width * 0.12f
+        val verticalPadding = size.height * 0.13f
+        val guideWidth = size.width - horizontalPadding * 2
+        val guideHeight = size.height - verticalPadding * 2
+        drawRoundRect(
+            color = guideColor.copy(alpha = 0.22f),
+            topLeft = androidx.compose.ui.geometry.Offset(horizontalPadding, verticalPadding),
+            size = androidx.compose.ui.geometry.Size(guideWidth, guideHeight),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(32f, 32f),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
+        )
     }
 }
 
@@ -1483,7 +1657,40 @@ private val TrainingLabels = listOf(
     "Y",
     "Z",
     "HOLA",
-    "GRACIAS"
+    "GRACIAS",
+    "SI",
+    "NO",
+    "POR FAVOR",
+    "BUENOS DIAS",
+    "BUENAS TARDES",
+    "BUENAS NOCHES",
+    "COMO ESTAS",
+    "ME AYUDAS",
+    "TE QUIERO",
+    "PERDON",
+    "CON PERMISO",
+    "AYUDA",
+    "AGUA",
+    "COMIDA",
+    "BAÑO",
+    "ESCUELA",
+    "DOCTOR",
+    "EMERGENCIA"
+)
+
+private val QuickPhrases = listOf(
+    "HOLA",
+    "GRACIAS",
+    "POR FAVOR",
+    "BUENOS DIAS",
+    "BUENAS TARDES",
+    "BUENAS NOCHES",
+    "COMO ESTAS",
+    "ME AYUDAS",
+    "AYUDA",
+    "AGUA",
+    "BAÑO",
+    "EMERGENCIA"
 )
 
 private val HandConnections = listOf(
@@ -1513,26 +1720,69 @@ private val HandConnections = listOf(
 private const val AUTO_CAPTURE_TARGET = 100
 private const val AUTO_CAPTURE_INTERVAL_MS = 120L
 private const val MOTION_SEQUENCE_FRAMES = 30
-private const val LIVE_MOTION_BUFFER_FRAMES = 18
-private const val RECOGNITION_INTERVAL_MS = 80L
-private const val MIN_RECOGNITION_CONFIDENCE = 40
-private const val STATIC_HOLD_DURATION_MS = 3_000L
-private const val MOTION_MIN_CONFIDENCE = 68
-private const val STATIC_MOTION_GUARD_CONFIDENCE = 52
-private const val MOTION_CONFIDENCE_MARGIN = 12
-private const val MOTION_REQUIRED_VOTES = 3
-private const val MOTION_COMMIT_COOLDOWN_MS = 1_200L
-private const val MOTION_RELEASE_MS = 650L
+private const val LIVE_MOTION_BUFFER_FRAMES = 22
+private const val RECOGNITION_INTERVAL_MS = 90L
+private const val MIN_RECOGNITION_CONFIDENCE = 48
+private const val STATIC_REQUIRED_VOTES = 3
+private const val STATIC_HOLD_DURATION_MS = 2_500L
+private const val MOTION_MIN_CONFIDENCE = 74
+private const val STATIC_MOTION_GUARD_CONFIDENCE = 58
+private const val MOTION_CONFIDENCE_MARGIN = 16
+private const val MOTION_REQUIRED_VOTES = 4
+private const val MOTION_DISPLAY_VOTES = 3
+private const val MOTION_COMMIT_COOLDOWN_MS = 1_600L
+private const val MOTION_RELEASE_MS = 850L
 
-private val MotionLabels = setOf("J", "K", "\u00D1", "Q", "X", "Z", "HOLA")
+private val MotionLabels = setOf(
+    "J",
+    "K",
+    "\u00D1",
+    "Q",
+    "X",
+    "Z",
+    "HOLA",
+    "GRACIAS",
+    "POR FAVOR",
+    "BUENOS DIAS",
+    "BUENAS TARDES",
+    "BUENAS NOCHES",
+    "COMO ESTAS",
+    "ME AYUDAS",
+    "TE QUIERO",
+    "PERDON",
+    "CON PERMISO",
+    "AYUDA",
+    "BAÑO",
+    "EMERGENCIA"
+)
 
 private fun String.appendRecognizedLabel(label: String): String {
-    return if (label == "HOLA") {
-        this + "HOLA "
+    return if (label in PhraseLabels) {
+        appendQuickPhrase(label)
     } else {
         this + label
     }
 }
+
+private fun String.appendQuickPhrase(phrase: String): String {
+    val current = trimEnd()
+    return if (current.isBlank()) {
+        "$phrase "
+    } else {
+        "$current $phrase "
+    }
+}
+
+private val PhraseLabels = QuickPhrases.toSet() + setOf(
+    "SI",
+    "NO",
+    "TE QUIERO",
+    "PERDON",
+    "CON PERMISO",
+    "COMIDA",
+    "ESCUELA",
+    "DOCTOR"
+)
 
 private fun String.toNormalizedHandPoints(): List<Pair<Float, Float>> {
     val values = split(",").mapNotNull { value ->
