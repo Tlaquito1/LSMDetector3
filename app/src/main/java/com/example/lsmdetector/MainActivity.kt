@@ -705,18 +705,23 @@ private fun DetectorScreen(
                             motionVotes = emptyList()
                         }
 
-                        val stableStaticPrediction = staticPrediction
-                            ?.takeIf { it.confidence >= MIN_RECOGNITION_CONFIDENCE }
-                            ?.let { static ->
-                                staticVotes = (staticVotes + static.label)
-                                    .takeLast(STATIC_REQUIRED_VOTES)
-                                val stableStatic = staticVotes.size == STATIC_REQUIRED_VOTES &&
-                                    staticVotes.all { it == static.label }
-                                static.takeIf { stableStatic }
-                            } ?: run {
+                        val stableStaticPrediction = if (motionLocked) {
+                            staticVotes = emptyList()
+                            null
+                        } else {
+                            staticPrediction
+                                ?.takeIf { it.confidence >= MIN_RECOGNITION_CONFIDENCE }
+                                ?.let { static ->
+                                    staticVotes = (staticVotes + static.label)
+                                        .takeLast(STATIC_REQUIRED_VOTES)
+                                    val stableStatic = staticVotes.size == STATIC_REQUIRED_VOTES &&
+                                        staticVotes.all { it == static.label }
+                                    static.takeIf { stableStatic }
+                                } ?: run {
                                 staticVotes = emptyList()
                                 null
                             }
+                        }
 
                         // Solo se muestra un movimiento cuando ya acumula votos.
                         val stableMotionPrediction = motionPrediction?.takeIf {
@@ -727,12 +732,18 @@ private fun DetectorScreen(
                             ?: stableStaticPrediction
 
                         val recognizedLabel = prediction?.label
-                        if (recognizedLabel == null || recognizedLabel in MotionLabels) {
+                        val recognizedConfidence = prediction?.confidence ?: 0
+                        val writableStaticLabel = recognizedLabel?.takeIf {
+                            it !in MotionLabels &&
+                                recognizedConfidence >= STATIC_WRITE_CONFIDENCE
+                        }
+
+                        if (writableStaticLabel == null) {
                             candidateLabel = ""
                             candidateSince = 0L
                             confirmationProgress = 0f
-                        } else if (recognizedLabel != candidateLabel) {
-                            candidateLabel = recognizedLabel
+                        } else if (writableStaticLabel != candidateLabel) {
+                            candidateLabel = writableStaticLabel
                             candidateSince = now
                             confirmationProgress = 0f
                         } else {
@@ -742,20 +753,22 @@ private fun DetectorScreen(
                                 ((now - candidateSince).toFloat() / STATIC_HOLD_DURATION_MS)
                                     .coerceIn(0f, 1f)
                             if (now - candidateSince >= STATIC_HOLD_DURATION_MS) {
-                                phrase = phrase.appendRecognizedLabel(recognizedLabel)
+                                phrase = phrase.appendRecognizedLabel(writableStaticLabel)
                                 candidateSince = now
                                 confirmationProgress = 0f
                             }
                         }
 
-                        detectorMessage = if (prediction != null) {
-                            if (recognizedLabel in MotionLabels) {
-                                "Movimiento consistente detectado."
-                            } else {
-                                "Mantén la seña estable para escribirla."
-                            }
-                        } else if (motionLocked) {
+                        detectorMessage = if (motionLocked) {
                             "Movimiento escrito. Detén la mano un momento para continuar."
+                        } else if (prediction != null) {
+                            if (recognizedLabel in MotionLabels) {
+                                "Movimiento posible. Completa la trayectoria con calma."
+                            } else if (recognizedConfidence < STATIC_WRITE_CONFIDENCE) {
+                                "Seña posible. Ajusta la mano para subir la confianza."
+                            } else {
+                                "Seña clara. Manténla estable para escribirla."
+                            }
                         } else {
                             "Mano detectada, esperando una coincidencia confiable."
                         }
@@ -1575,7 +1588,11 @@ private fun DetectionStatus(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (prediction != null) "Lista para escribir" else "Esperando seña",
+                        text = if (prediction != null) {
+                            if (confirmationProgress > 0f) "Confirmando" else "Seña posible"
+                        } else {
+                            "Esperando seña"
+                        },
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1686,18 +1703,19 @@ private val HandConnections = listOf(
 private const val AUTO_CAPTURE_TARGET = 100
 private const val AUTO_CAPTURE_INTERVAL_MS = 120L
 private const val MOTION_SEQUENCE_FRAMES = 30
-private const val LIVE_MOTION_BUFFER_FRAMES = 20
-private const val RECOGNITION_INTERVAL_MS = 80L
-private const val MIN_RECOGNITION_CONFIDENCE = 30
-private const val STATIC_REQUIRED_VOTES = 1
-private const val STATIC_HOLD_DURATION_MS = 1_200L
-private const val MOTION_MIN_CONFIDENCE = 50
-private const val STATIC_MOTION_GUARD_CONFIDENCE = 48
-private const val MOTION_CONFIDENCE_MARGIN = 4
-private const val MOTION_REQUIRED_VOTES = 2
-private const val MOTION_DISPLAY_VOTES = 1
-private const val MOTION_COMMIT_COOLDOWN_MS = 1_100L
-private const val MOTION_RELEASE_MS = 600L
+private const val LIVE_MOTION_BUFFER_FRAMES = 24
+private const val RECOGNITION_INTERVAL_MS = 110L
+private const val MIN_RECOGNITION_CONFIDENCE = 38
+private const val STATIC_WRITE_CONFIDENCE = 62
+private const val STATIC_REQUIRED_VOTES = 4
+private const val STATIC_HOLD_DURATION_MS = 3_000L
+private const val MOTION_MIN_CONFIDENCE = 68
+private const val STATIC_MOTION_GUARD_CONFIDENCE = 60
+private const val MOTION_CONFIDENCE_MARGIN = 12
+private const val MOTION_REQUIRED_VOTES = 4
+private const val MOTION_DISPLAY_VOTES = 2
+private const val MOTION_COMMIT_COOLDOWN_MS = 1_600L
+private const val MOTION_RELEASE_MS = 800L
 
 private val MotionLabels = setOf(
     "J",
