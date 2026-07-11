@@ -98,15 +98,16 @@ class UserDatabaseHelper(context: Context) :
     }
 
     fun saveSignSample(label: String, landmarks: String): Boolean {
+        if (!isValidSampleInput(label, landmarks)) return false
         // Una pose estática contiene exactamente un frame de 63 valores.
-        return saveSample(label, landmarks, TYPE_STATIC, 1)
+        return saveSample(label.trim(), landmarks, TYPE_STATIC, 1)
     }
 
     fun saveSignSequence(label: String, frames: List<String>): Boolean {
-        if (frames.isEmpty()) return false
+        if (label.isBlank() || frames.isEmpty() || frames.any { it.isBlank() }) return false
         // Una seña dinámica guarda todos sus frames como un solo ejemplo.
         return saveSample(
-            label = label,
+            label = label.trim(),
             landmarks = frames.joinToString(FRAME_SEPARATOR),
             sampleType = TYPE_MOTION,
             frameCount = frames.size
@@ -261,6 +262,10 @@ class UserDatabaseHelper(context: Context) :
         }
         columns += current.toString()
         return columns
+    }
+
+    private fun isValidSampleInput(label: String, landmarks: String): Boolean {
+        return label.isNotBlank() && landmarks.isNotBlank()
     }
 
     private fun emailExists(email: String): Boolean {
