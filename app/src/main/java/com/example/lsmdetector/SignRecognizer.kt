@@ -237,18 +237,18 @@ class SignRecognizer(samples: List<SignSample>) {
         private const val HAND_LANDMARK_COUNT = 21
         private const val LANDMARK_VALUE_COUNT = 63
         private const val MIN_STORED_MOTION_FRAMES = 15
-        private const val MIN_LIVE_MOTION_FRAMES = 9
-        private const val MOTION_COMPARE_FRAMES = 20
+        private const val MIN_LIVE_MOTION_FRAMES = 8
+        private const val MOTION_COMPARE_FRAMES = 18
         private const val NEIGHBORS_PER_LABEL = 5
         private const val MOTION_NEIGHBORS_PER_LABEL = 3
-        private const val MIN_WRIST_DISPLACEMENT = 0.15f
-        private const val MIN_WRIST_PATH_LENGTH = 0.22f
-        private const val MIN_POSE_CHANGE = 0.14f
+        private const val MIN_WRIST_DISPLACEMENT = 0.12f
+        private const val MIN_WRIST_PATH_LENGTH = 0.18f
+        private const val MIN_POSE_CHANGE = 0.12f
         private const val POSE_WEIGHT = 0.46f
         private const val TRAJECTORY_WEIGHT = 0.34f
         private const val ENDPOINT_WEIGHT = 0.14f
         private const val PATH_WEIGHT = 0.06f
-        private const val STATIC_CONFIDENCE_SCALE = 0.48f
-        private const val MOTION_CONFIDENCE_SCALE = 0.84f
+        private const val STATIC_CONFIDENCE_SCALE = 0.55f
+        private const val MOTION_CONFIDENCE_SCALE = 0.96f
     }
 }

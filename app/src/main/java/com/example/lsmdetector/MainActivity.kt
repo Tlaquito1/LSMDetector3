@@ -659,6 +659,8 @@ private fun DetectorScreen(
                         motionBuffer = (motionBuffer + landmarks).takeLast(LIVE_MOTION_BUFFER_FRAMES)
 
                         val staticPrediction = recognizer.recognizeStatic(landmarks)
+                        val previewStaticPrediction = staticPrediction
+                            ?.takeIf { it.confidence >= MIN_RECOGNITION_CONFIDENCE }
                         val motionPrediction = recognizer.recognizeMotion(motionBuffer)
                             ?.takeIf { motion ->
                                 val staticConfidence = staticPrediction?.confidence ?: 0
@@ -709,15 +711,13 @@ private fun DetectorScreen(
                             staticVotes = emptyList()
                             null
                         } else {
-                            staticPrediction
-                                ?.takeIf { it.confidence >= MIN_RECOGNITION_CONFIDENCE }
-                                ?.let { static ->
-                                    staticVotes = (staticVotes + static.label)
-                                        .takeLast(STATIC_REQUIRED_VOTES)
-                                    val stableStatic = staticVotes.size == STATIC_REQUIRED_VOTES &&
-                                        staticVotes.all { it == static.label }
-                                    static.takeIf { stableStatic }
-                                } ?: run {
+                            previewStaticPrediction?.let { static ->
+                                staticVotes = (staticVotes + static.label)
+                                    .takeLast(STATIC_REQUIRED_VOTES)
+                                val stableStatic = staticVotes.size == STATIC_REQUIRED_VOTES &&
+                                    staticVotes.all { it == static.label }
+                                static.takeIf { stableStatic }
+                            } ?: run {
                                 staticVotes = emptyList()
                                 null
                             }
@@ -730,13 +730,13 @@ private fun DetectorScreen(
                         }
                         prediction = stableMotionPrediction
                             ?: stableStaticPrediction
+                            ?: previewStaticPrediction
 
                         val recognizedLabel = prediction?.label
-                        val recognizedConfidence = prediction?.confidence ?: 0
-                        val writableStaticLabel = recognizedLabel?.takeIf {
-                            it !in MotionLabels &&
-                                recognizedConfidence >= STATIC_WRITE_CONFIDENCE
-                        }
+                        val writableStaticLabel = stableStaticPrediction
+                            ?.takeIf { it.confidence >= STATIC_WRITE_CONFIDENCE }
+                            ?.label
+                            ?.takeIf { it !in MotionLabels }
 
                         if (writableStaticLabel == null) {
                             candidateLabel = ""
@@ -764,8 +764,8 @@ private fun DetectorScreen(
                         } else if (prediction != null) {
                             if (recognizedLabel in MotionLabels) {
                                 "Movimiento posible. Completa la trayectoria con calma."
-                            } else if (recognizedConfidence < STATIC_WRITE_CONFIDENCE) {
-                                "Seña posible. Ajusta la mano para subir la confianza."
+                            } else if (writableStaticLabel == null) {
+                                "Seña posible. Manténla quieta y centrada para confirmar."
                             } else {
                                 "Seña clara. Manténla estable para escribirla."
                             }
@@ -1703,18 +1703,18 @@ private val HandConnections = listOf(
 private const val AUTO_CAPTURE_TARGET = 100
 private const val AUTO_CAPTURE_INTERVAL_MS = 120L
 private const val MOTION_SEQUENCE_FRAMES = 30
-private const val LIVE_MOTION_BUFFER_FRAMES = 24
-private const val RECOGNITION_INTERVAL_MS = 110L
-private const val MIN_RECOGNITION_CONFIDENCE = 38
-private const val STATIC_WRITE_CONFIDENCE = 62
-private const val STATIC_REQUIRED_VOTES = 4
-private const val STATIC_HOLD_DURATION_MS = 3_000L
-private const val MOTION_MIN_CONFIDENCE = 68
-private const val STATIC_MOTION_GUARD_CONFIDENCE = 60
-private const val MOTION_CONFIDENCE_MARGIN = 12
-private const val MOTION_REQUIRED_VOTES = 4
-private const val MOTION_DISPLAY_VOTES = 2
-private const val MOTION_COMMIT_COOLDOWN_MS = 1_600L
+private const val LIVE_MOTION_BUFFER_FRAMES = 22
+private const val RECOGNITION_INTERVAL_MS = 100L
+private const val MIN_RECOGNITION_CONFIDENCE = 25
+private const val STATIC_WRITE_CONFIDENCE = 56
+private const val STATIC_REQUIRED_VOTES = 3
+private const val STATIC_HOLD_DURATION_MS = 2_400L
+private const val MOTION_MIN_CONFIDENCE = 58
+private const val STATIC_MOTION_GUARD_CONFIDENCE = 54
+private const val MOTION_CONFIDENCE_MARGIN = 8
+private const val MOTION_REQUIRED_VOTES = 3
+private const val MOTION_DISPLAY_VOTES = 1
+private const val MOTION_COMMIT_COOLDOWN_MS = 1_500L
 private const val MOTION_RELEASE_MS = 800L
 
 private val MotionLabels = setOf(
